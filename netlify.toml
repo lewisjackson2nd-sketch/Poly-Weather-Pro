@@ -1,0 +1,8 @@
+[[redirects]]
+  from = "/polymarket-api/*"
+  to = "https://gamma-api.polymarket.com/:splat"
+  status = 200
+  force = true
+
+  [redirects.headers]
+    X-Forwarded-Host = "gamma-api.polymarket.com"

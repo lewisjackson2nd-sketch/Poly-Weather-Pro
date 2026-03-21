@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poly Weather Pro</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:#080808;min-height:100vh;font-family:'Courier New',monospace;color:#e0e0e0;}
+  body{padding:16px;}
+  .term{background:#0d0d0d;border-radius:10px;font-family:'Courier New',monospace;font-size:16px;color:#e0e0e0;overflow:hidden;max-width:900px;margin:0 auto;border:1px solid #1a1a1a;}
+  .titlebar{background:#111;padding:11px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #1e1e1e;}
+  .dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;}
+  .dot-r{background:#ff5f57;}.dot-y{background:#febc2e;}.dot-g{background:#28c840;}
+  .brand{flex:1;text-align:center;}
+  .brand-name{font-size:18px;font-weight:700;color:#4ec9b0;letter-spacing:0.12em;}
+  .brand-sub{font-size:13px;color:#333;letter-spacing:0.14em;margin-top:2px;}
+  .status-pill{display:flex;align-items:center;gap:5px;font-size:14px;padding:3px 10px;border-radius:20px;border:1px solid #333;white-space:nowrap;flex-shrink:0;}
+  .status-pill.live{border-color:#28c840;color:#28c840;}
+  .status-pill.demo{border-color:#febc2e;color:#febc2e;}
+  .status-pill.loading{border-color:#444;color:#444;}
+  .pulse{width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .pulse.anim{animation:pa 1.2s ease-in-out infinite;}
+  @keyframes pa{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .ticker-temp{color:#4ec9b0;font-weight:700;margin:0 4px;}
+  .ticker-cond{color:#333;}
+  .body{padding:16px 18px;}
+  .tab-row{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap;}
+  .tab{font-family:'Courier New',monospace;font-size:15px;padding:5px 12px;border-radius:3px;border:1px solid #222;background:#111;color:#555;cursor:pointer;transition:all 0.1s;}
+  .tab:hover{color:#888;border-color:#333;}
+  .tab.active{background:#1a2a2a;border-color:#4ec9b0;color:#4ec9b0;}
+  .ps1{color:#4ec9b0;font-size:15px;white-space:nowrap;}
+  .cmd-line{color:#dcdcaa;font-size:15px;}
+  .line{font-size:15px;line-height:1.85;white-space:pre-wrap;word-break:break-word;}
+  .dim{color:#2a2a2a;}.muted{color:#555;}.white{color:#e0e0e0;}
+  .green{color:#4ec9b0;}.yellow{color:#dcdcaa;}.amber{color:#f0a500;}
+  .red{color:#f44747;}.blue{color:#569cd6;}.pink{color:#c586c0;}
+  .tag{display:inline-block;padding:1px 7px;border-radius:3px;font-size:14px;vertical-align:middle;}
+  .tag-pro{background:#1a0d28;color:#c586c0;border:1px solid #2a1a40;}
+  .tag-none{background:#111;color:#444;border:1px solid #222;}
+  .action-yes{display:inline-block;padding:4px 14px;border-radius:3px;font-size:15px;font-weight:700;background:#0a2a1a;color:#4ec9b0;border:1px solid #1a5a3a;letter-spacing:0.05em;}
+  .action-no{display:inline-block;padding:4px 14px;border-radius:3px;font-size:15px;font-weight:700;background:#2a0a0a;color:#f44747;border:1px solid #5a1a1a;letter-spacing:0.05em;}
+  .action-skip{display:inline-block;padding:4px 14px;border-radius:3px;font-size:15px;background:#111;color:#444;border:1px solid #222;}
+  .action-weak{display:inline-block;padding:4px 14px;border-radius:3px;font-size:15px;background:#0d1828;color:#569cd6;border:1px solid #1a2a40;}
+  .sizing-badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:14px;margin-left:6px;vertical-align:middle;}
+  .sizing-full{background:#0a1a10;color:#4ec9b0;border:1px solid #1a3a20;}
+  .sizing-half{background:#1a1500;color:#febc2e;border:1px solid #3a2a00;}
+  .mkt-card{border-radius:5px;border:1px solid #1e1e1e;padding:13px 15px;margin:6px 0 14px;background:#0f0f0f;}
+  .mkt-card.buy-yes{border-left:3px solid #4ec9b0;background:#080f0c;}
+  .mkt-card.buy-no{border-left:3px solid #f44747;background:#0f0808;}
+  .mkt-card.skip{border-left:3px solid #1e1e1e;}
+  .mkt-card.weak{border-left:3px solid #569cd6;background:#080c14;}
+  .pro-block{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:4px;padding:8px 11px;margin:5px 0;}
+  .pro-block.safe{border-color:#123a12;background:#08100a;}
+  .pro-block.warn{border-color:#3a2a00;background:#100e00;}
+  .pro-block.danger{border-color:#3a1212;background:#0f0808;}
+  .confidence-ring{display:inline-block;padding:3px 10px;border-radius:3px;font-size:15px;font-weight:700;}
+  .conf-high{background:#0a2a1a;color:#4ec9b0;border:1px solid #1a4a2a;}
+  .conf-med{background:#1f1800;color:#febc2e;border:1px solid #3a2e00;}
+  .conf-low{background:#2a0d0d;color:#f44747;border:1px solid #4a1a1a;}
+  .summary-bar{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 12px;}
+  .sbar-item{font-size:14px;padding:3px 10px;border-radius:3px;}
+  .bar{display:inline-block;height:6px;border-radius:2px;vertical-align:middle;}
+  .bar-src1{background:#569cd6;}.bar-src2{background:#c586c0;}
+  .model-pill{display:inline-block;padding:1px 6px;border-radius:2px;font-size:14px;background:#1a1a1a;color:#555;border:1px solid #222;margin-right:4px;}
+  .model-pill.ok{background:#0d1e0d;color:#4ec9b0;border-color:#1a3a1a;}
+  .ctrl-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px;}
+  .ctrl-label{font-size:15px;color:#555;}
+  .term-select{background:#111;border:1px solid #222;color:#dcdcaa;font-family:'Courier New',monospace;font-size:15px;padding:5px 9px;border-radius:4px;outline:none;cursor:pointer;}
+  .term-select:focus{border-color:#4ec9b0;}
+  .date-nav{background:none;border:1px solid #222;color:#4ec9b0;font-family:'Courier New',monospace;font-size:15px;padding:4px 10px;border-radius:3px;cursor:pointer;}
+  .date-nav:hover{background:#1a2a2a;}
+  .chip{font-size:14px;padding:3px 11px;border-radius:20px;border:1px solid #222;background:#111;color:#555;cursor:pointer;}
+  .chip.active{background:#1a2a2a;border-color:#4ec9b0;color:#4ec9b0;}
+  .chip-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;}
+  .chart-block{background:#0f0f0f;border:1px solid #1a1a1a;border-radius:5px;padding:13px 15px;margin-bottom:12px;}
+  .chart-title{font-size:15px;color:#4ec9b0;margin-bottom:2px;font-weight:600;}
+  .chart-sub{font-size:14px;color:#2a2a2a;margin-bottom:8px;}
+  .legend-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:8px;}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:14px;color:#444;}
+  .legend-pip{width:20px;height:3px;border-radius:1px;display:inline-block;}
+  .input-row{display:flex;gap:6px;margin-bottom:12px;}
+  .input-row input{background:#111;border:1px solid #222;color:#dcdcaa;font-family:'Courier New',monospace;font-size:15px;padding:6px 9px;border-radius:4px;flex:1;outline:none;}
+  .input-row input:focus{border-color:#4ec9b0;}
+  .run-btn{background:#111;border:1px solid #4ec9b0;color:#4ec9b0;font-family:'Courier New',monospace;font-size:15px;padding:6px 14px;border-radius:4px;cursor:pointer;}
+  .run-btn:hover{background:#4ec9b0;color:#0d0d0d;}
+  .decision-box{border-radius:5px;padding:14px 16px;margin:10px 0 0;}
+  .decision-box.go{background:#060f08;border:1px solid #1a4a2a;}
+  .decision-box.no-go{background:#0f0606;border:1px solid #4a1a1a;}
+  .decision-box.wait{background:#0f0e00;border:1px solid #3a2e00;}
+  .checklist-item{display:flex;align-items:flex-start;gap:8px;margin:4px 0;font-size:15px;line-height:1.6;}
+  .check-yes{color:#4ec9b0;font-weight:700;min-width:14px;flex-shrink:0;}
+  .check-no{color:#f44747;font-weight:700;min-width:14px;flex-shrink:0;}
+  .check-warn{color:#f0a500;font-weight:700;min-width:14px;flex-shrink:0;}
+  .watermark{font-size:14px;color:#1e1e1e;text-align:right;margin-top:14px;letter-spacing:0.06em;padding-top:10px;border-top:1px solid #111;}
+  .refresh-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;font-size:14px;color:#444;}
+  .refresh-btn{background:none;border:1px solid #333;color:#4ec9b0;font-family:'Courier New',monospace;font-size:14px;padding:2px 9px;border-radius:3px;cursor:pointer;}
+  .refresh-btn:hover{background:#1a2a2a;}
+  .countdown{color:#333;font-size:14px;}
+.ticker-bar{background:#0a0a0a;border-bottom:1px solid #1a1a1a;padding:5px 0;display:flex;align-items:center;overflow:hidden;position:relative;}
+  .ticker-label{font-size:11px;color:#4ec9b0;letter-spacing:0.14em;white-space:nowrap;flex-shrink:0;padding:0 14px;border-right:1px solid #1a1a1a;font-weight:700;z-index:2;background:#0a0a0a;}
+  .ticker-track{flex:1;overflow:hidden;position:relative;height:22px;}
+  .ticker-scroll{display:flex;align-items:center;white-space:nowrap;position:absolute;left:0;top:0;height:100%;will-change:transform;}
+  .ticker-scroll.running{animation:tickerMove linear infinite;}
+  @keyframes tickerMove{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .ticker-seg{display:inline-flex;align-items:center;gap:0;padding:0;}
+  .ticker-city{color:#555;font-size:13px;padding-right:3px;}
+  .ticker-temp{color:#4ec9b0;font-weight:700;font-size:13px;}
+  .ticker-cond{color:#444;font-size:13px;padding:0 4px;}
+  .ticker-sep{color:#1e1e1e;padding:0 18px;font-size:13px;}
+</style>
+</head>
+<body>
+<div class="term">
+  <div class="titlebar">
+    <div class="dot dot-r"></div>
+    <div class="dot dot-y"></div>
+    <div class="dot dot-g"></div>
+    <div class="brand">
+      <div class="brand-name">POLY WEATHER PRO</div>
+      <div class="brand-sub">polymarket weather intelligence &nbsp;·&nbsp; manual trading &nbsp;·&nbsp; professional grade</div>
+    </div>
+    <div class="status-pill loading" id="status-pill">
+      <div class="pulse" id="status-dot"></div>
+      <span id="status-text">booting</span>
+    </div>
+  </div>
+
+  <div class="ticker-bar">
+    <span class="ticker-label">LIVE TEMPS</span>
+    <div class="ticker-track">
+      <div class="ticker-scroll" id="ticker-scroll">
+        <span class="ticker-seg"><span class="ticker-city">loading...</span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div class="tab-row">
+      <button class="tab active" onclick="showTab('signals')">pro signals</button>
+      <button class="tab" onclick="showTab('charts')">7-day charts</button>
+      <button class="tab" onclick="showTab('scan')">deep scan</button>
+      <button class="tab" onclick="showTab('guide')">trading guide</button>
+    </div>
+
+    <div id="tab-signals">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+        <span class="ps1">pwp $</span>
+        <span class="cmd-line">run pro-scan --ensemble --clim --trend --decay --threshold --manual-only</span>
+      </div>
+      <div class="refresh-bar">
+        <button class="refresh-btn" onclick="hardRefresh()">↻ refresh</button>
+        <span class="countdown" id="countdown">next auto-refresh in <span id="countdown-val">360</span>s</span>
+        <span style="color:#2a2a2a;">· model runs: 00z 06z 12z 18z UTC</span>
+      </div>
+      <div id="signals-output"><div class="line muted">initializing Poly Weather Pro...</div></div>
+    </div>
+
+    <div id="tab-charts" style="display:none;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap;">
+        <span class="ps1">pwp $</span>
+        <span class="cmd-line">forecast --multi-model --from <span id="date-cmd">today</span> --days 7</span>
+      </div>
+      <div class="ctrl-row">
+        <span class="ctrl-label">start date</span>
+        <button class="date-nav" onclick="shiftDate(-1)">◂</button>
+        <span style="font-size:15px;color:#dcdcaa;padding:0 8px;" id="date-val">2026-03-21</span>
+        <button class="date-nav" onclick="shiftDate(1)">▸</button>
+        <span class="ctrl-label" style="margin-left:8px;">metric</span>
+        <select id="metric-sel" class="term-select" onchange="rebuildCharts()">
+          <option value="rain">rain probability %</option>
+          <option value="temp">temperature °F</option>
+          <option value="wind">wind speed km/h</option>
+          <option value="precip">precipitation mm</option>
+        </select>
+
+      </div>
+      <div class="chip-row" id="city-chips"></div>
+      <div id="charts-area"><div class="line muted">loading...</div></div>
+    </div>
+
+    <div id="tab-scan" style="display:none;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span class="ps1">pwp $</span>
+        <span class="cmd-line">deep-scan --city <span id="scan-city-lbl">new york</span> --all-params</span>
+      </div>
+      <div class="input-row">
+        <input type="text" id="city-input" placeholder="enter city..." value="New York">
+        <button class="run-btn" onclick="runCityScan()">run ↵</button>
+      </div>
+      <div id="scan-output"><div class="line muted">enter a city and press run</div></div>
+    </div>
+
+    <div id="tab-guide" style="display:none;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span class="ps1">pwp $</span><span class="cmd-line">help --manual-trading-guide</span>
+      </div>
+      <div class="line green">[POLY WEATHER PRO — MANUAL TRADING DECISION FRAMEWORK]</div><br>
+      <div class="line yellow">STEP 1 — confidence score</div>
+      <div class="line muted">  ≥75  → consider entering. verify checklist first.</div>
+      <div class="line muted">  50–74 → half size only. higher uncertainty.</div>
+      <div class="line muted">  &lt;50  → do not enter. signal too weak.</div><br>
+      <div class="line yellow">STEP 2 — pre-trade checklist</div>
+      <div class="line muted">  ✓ all green = go.  △ amber = caution, reduce size.  ✗ red = stop.</div>
+      <div class="line muted">  any red check = no trade regardless of confidence score.</div><br>
+      <div class="line yellow">STEP 3 — ensemble spread</div>
+      <div class="line muted">  TIGHT (&lt;8%)     = atmosphere settled. highest confidence window.</div>
+      <div class="line muted">  MODERATE (8–18%) = half size max.</div>
+      <div class="line muted">  WIDE (&gt;18%)     = do not trade. models are guessing.</div><br>
+      <div class="line yellow">STEP 4 — threshold proximity</div>
+      <div class="line muted">  forecast within 1σ of resolution threshold → skip.</div>
+      <div class="line muted">  need ≥2σ clearance from threshold to trade confidently.</div><br>
+      <div class="line yellow">STEP 5 — synoptic regime</div>
+      <div class="line muted">  rising pressure = clearing = predictable = trade-ready.</div>
+      <div class="line muted">  pressure in transition = skip. atmosphere in flux.</div><br>
+      <div class="line yellow">STEP 6 — multi-model trend</div>
+      <div class="line muted">  GFS + ECMWF + ICON converging = strong consensus.</div>
+      <div class="line muted">  spread &lt;10 = best entry window.</div>
+      <div class="line muted">  diverging = wait for next 6h model update cycle.</div><br>
+      <div class="line yellow">STEP 7 — climatology base rate</div>
+      <div class="line muted">  market &gt;20% from 30yr base rate with no catalyst = suspicious.</div>
+      <div class="line muted">  forecast + clim + both sources agree = maximum confidence.</div><br>
+      <div class="line yellow">STEP 8 — accuracy decay</div>
+      <div class="line muted">  D+1 = 93%   D+2 = 88%   D+3 = 84%   D+5 = 74%   D+7 = 65%</div>
+      <div class="line muted">  D+5 or later: require confidence ≥80 before entering.</div><br>
+      <div class="line yellow">SIZING RULES</div>
+      <div class="line muted">  conf ≥75 + all green + D+1/D+2 = full size</div>
+      <div class="line muted">  conf ≥75 + all green + D+3–D+5 = 75% size</div>
+      <div class="line muted">  conf 50–74 + mostly green    = 50% size</div>
+      <div class="line muted">  any red check                = no trade</div><br>
+      <div class="line yellow">ENTRY TIMING</div>
+      <div class="line muted">  best: model run fresh (&lt;3h) + tight ensemble + models converging</div>
+      <div class="line muted">  avoid: entering immediately after run — wait 30min for repricing</div>
+      <div class="line muted">  re-check: 00z · 06z · 12z · 18z UTC every day</div>
+      <div class="line dim">--------------------------------------------------------------------</div>
+      <div class="line muted" style="margin-top:6px;">Poly Weather Pro · manual intelligence only · you decide, you trade</div>
+    </div>
+
+    <div class="watermark">Poly Weather Pro &nbsp;·&nbsp; manual intelligence &nbsp;·&nbsp; not financial advice</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const CITIES={
+  'new york':    {lat:40.71, lon:-74.01, label:'New York',    clim:{rain:52,tempMax:11,rainMm:110}},
+  'chicago':     {lat:41.88, lon:-87.63, label:'Chicago',     clim:{rain:45,tempMax:8, rainMm:70}},
+  'los angeles': {lat:34.05, lon:-118.24,label:'Los Angeles', clim:{rain:22,tempMax:22,rainMm:38}},
+  'miami':       {lat:25.76, lon:-80.19, label:'Miami',       clim:{rain:55,tempMax:28,rainMm:55}},
+  'seattle':     {lat:47.61, lon:-122.33,label:'Seattle',     clim:{rain:61,tempMax:12,rainMm:93}},
+  'atlanta':     {lat:33.75, lon:-84.39, label:'Atlanta',     clim:{rain:50,tempMax:17,rainMm:120}},
+  'dallas':      {lat:32.78, lon:-96.80, label:'Dallas',      clim:{rain:42,tempMax:20,rainMm:85}},
+  'boston':      {lat:42.36, lon:-71.06, label:'Boston',      clim:{rain:53,tempMax:9, rainMm:105}},
+  'denver':      {lat:39.74, lon:-104.98,label:'Denver',      clim:{rain:35,tempMax:12,rainMm:43}},
+  'phoenix':     {lat:33.45, lon:-112.07,label:'Phoenix',     clim:{rain:8, tempMax:28,rainMm:20}},
+  'london':      {lat:51.51, lon:-0.13,  label:'London',      clim:{rain:58,tempMax:12,rainMm:50}},
+  'paris':       {lat:48.86, lon:2.35,   label:'Paris',       clim:{rain:55,tempMax:13,rainMm:52}},
+  'berlin':      {lat:52.52, lon:13.41,  label:'Berlin',      clim:{rain:48,tempMax:10,rainMm:43}},
+  'madrid':      {lat:40.42, lon:-3.70,  label:'Madrid',      clim:{rain:30,tempMax:15,rainMm:38}},
+  'rome':        {lat:41.90, lon:12.50,  label:'Rome',        clim:{rain:38,tempMax:17,rainMm:51}},
+  'amsterdam':   {lat:52.37, lon:4.90,   label:'Amsterdam',   clim:{rain:60,tempMax:10,rainMm:68}},
+  'zurich':      {lat:47.38, lon:8.54,   label:'Zurich',      clim:{rain:55,tempMax:9, rainMm:75}},
+  'vienna':      {lat:48.21, lon:16.37,  label:'Vienna',      clim:{rain:50,tempMax:10,rainMm:48}},
+  'warsaw':      {lat:52.23, lon:21.01,  label:'Warsaw',      clim:{rain:42,tempMax:7, rainMm:32}},
+  'stockholm':   {lat:59.33, lon:18.07,  label:'Stockholm',   clim:{rain:44,tempMax:4, rainMm:30}},
+  'tel aviv':    {lat:32.09, lon:34.78,  label:'Tel Aviv',    clim:{rain:40,tempMax:19,rainMm:40}},
+  'dubai':       {lat:25.20, lon:55.27,  label:'Dubai',       clim:{rain:6, tempMax:30,rainMm:5}},
+  'riyadh':      {lat:24.69, lon:46.72,  label:'Riyadh',      clim:{rain:4, tempMax:29,rainMm:3}},
+  'cairo':       {lat:30.06, lon:31.25,  label:'Cairo',       clim:{rain:3, tempMax:24,rainMm:2}},
+  'lagos':       {lat:6.52,  lon:3.38,   label:'Lagos',       clim:{rain:60,tempMax:33,rainMm:60}},
+  'nairobi':     {lat:-1.29, lon:36.82,  label:'Nairobi',     clim:{rain:55,tempMax:24,rainMm:60}},
+  'johannesburg':{lat:-26.20,lon:28.04,  label:'Johannesburg',clim:{rain:45,tempMax:22,rainMm:65}},
+  'tokyo':       {lat:35.68, lon:139.65, label:'Tokyo',       clim:{rain:50,tempMax:14,rainMm:117}},
+  'seoul':       {lat:37.57, lon:126.98, label:'Seoul',       clim:{rain:43,tempMax:10,rainMm:45}},
+  'shanghai':    {lat:31.23, lon:121.47, label:'Shanghai',    clim:{rain:52,tempMax:13,rainMm:85}},
+  'hong kong':   {lat:22.32, lon:114.17, label:'Hong Kong',   clim:{rain:55,tempMax:22,rainMm:80}},
+  'beijing':     {lat:39.91, lon:116.39, label:'Beijing',     clim:{rain:32,tempMax:8, rainMm:18}},
+  'singapore':   {lat:1.35,  lon:103.82, label:'Singapore',   clim:{rain:75,tempMax:31,rainMm:170}},
+  'mumbai':      {lat:19.08, lon:72.88,  label:'Mumbai',      clim:{rain:40,tempMax:32,rainMm:22}},
+  'delhi':       {lat:28.61, lon:77.21,  label:'Delhi',       clim:{rain:20,tempMax:28,rainMm:15}},
+  'bangkok':     {lat:13.75, lon:100.52, label:'Bangkok',     clim:{rain:55,tempMax:34,rainMm:80}},
+  'sydney':      {lat:-33.87,lon:151.21, label:'Sydney',      clim:{rain:42,tempMax:26,rainMm:90}},
+  'melbourne':   {lat:-37.81,lon:144.96, label:'Melbourne',   clim:{rain:48,tempMax:20,rainMm:48}},
+  'toronto':    {lat:43.65, lon:-79.38, label:'Toronto',     clim:{rain:47,tempMax:4, rainMm:56}},
+  'sao paulo':   {lat:-23.55,lon:-46.63, label:'Sao Paulo',   clim:{rain:58,tempMax:26,rainMm:140}},
+  'buenos aires':{lat:-34.61,lon:-58.38, label:'Buenos Aires',clim:{rain:45,tempMax:22,rainMm:85}},
+  'mexico city': {lat:19.43, lon:-99.13, label:'Mexico City', clim:{rain:40,tempMax:22,rainMm:55}},
+};
+const CITY_COLORS=['#4ec9b0','#569cd6','#c586c0','#dcdcaa','#f0a500','#f44747','#b5cea8','#9cdcfe','#ce9178','#d7ba7d','#4fc1ff','#a8cc8c','#e06c75','#98c379','#61afef','#e5c07b','#be5046','#56b6c2','#abb2bf','#d19a66','#7c6f64','#458588','#b16286','#689d6a','#cc241d','#d65d0e','#427b58','#8ec07c','#fabd2f','#83a598','#fe8019','#fb4934','#b8bb26','#8ec07c','#fabd2f','#83a598','#d3869b','#689d6a','#a89984','#928374'];
+let weatherCache={},ensembleCache={},multiModelCache={};
+let activeCities=new Set(['new york','london','chicago','miami','tel aviv','los angeles','tokyo','seoul','shanghai','hong kong']);
+let chartInstances={};
+let currentStartDate=new Date();currentStartDate.setHours(0,0,0,0);
+let countdownVal=360;
+let countdownTimer=null;
+
+function showTab(n){
+  ['signals','charts','scan','guide'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===n?'block':'none';});
+  document.querySelectorAll('.tab').forEach((b,i)=>{b.classList.toggle('active',['signals','charts','scan','guide'][i]===n);});
+  if(n==='charts') rebuildCharts();
+}
+function setStatus(s){
+  const pill=document.getElementById('status-pill'),dot=document.getElementById('status-dot'),txt=document.getElementById('status-text');
+  pill.className='status-pill '+s;dot.className='pulse'+(s==='live'?' anim':'');
+  txt.textContent=s==='live'?'live':s==='demo'?'demo data':'booting';
+}
+function dateToStr(d){return d.toISOString().slice(0,10);}
+function shiftDate(dir){
+  const today=new Date();today.setHours(0,0,0,0);
+  const max=new Date(today);max.setDate(max.getDate()+9);
+  const next=new Date(currentStartDate);next.setDate(next.getDate()+dir);
+  if(next<today||next>max)return;
+  currentStartDate=next;
+  document.getElementById('date-val').textContent=dateToStr(currentStartDate);
+  document.getElementById('date-cmd').textContent=dateToStr(currentStartDate);
+  rebuildCharts();
+}
+function startCountdown(){
+  if(countdownTimer) clearInterval(countdownTimer);
+  countdownVal=360;
+  const el=document.getElementById('countdown-val');
+  countdownTimer=setInterval(()=>{
+    countdownVal--;
+    if(el) el.textContent=countdownVal;
+    if(countdownVal<=0){clearInterval(countdownTimer);hardRefresh();}
+  },1000);
+}
+function hardRefresh(){
+  weatherCache={};ensembleCache={};multiModelCache={};
+  
+// ── UTILS ──────────────────────────────────────────────────
+function cToF(c){return c!=null?Math.round(c*9/5+32):null;}
+function fStr(c){const f=cToF(c);return f!=null?f+'°F':'—';}
+
+// ── LIVE SCROLLING TICKER ──────────────────────────────────
+const TICKER_CITIES=[
+  {key:'new york',   label:'New York'},
+  {key:'toronto',    label:'Toronto'},
+  {key:'lagos',      label:'Lagos'},
+  {key:'london',     label:'London'},
+  {key:'los angeles',label:'Los Angeles'},
+  {key:'paris',      label:'Paris'},
+  {key:'berlin',     label:'Berlin'},
+];
+
+function wIcon(code){
+  if(code===0)return'☀';
+  if(code<=2)return'⛅';
+  if(code<=3)return'☁';
+  if(code<=67)return'🌧';
+  if(code<=77)return'❄';
+  if(code<=82)return'🌧';
+  if(code<=99)return'⛈';
+  return'🌡';
+}
+
+async function fetchTickerTemp(lat,lon){
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`;
+    const r=await fetch(url);const d=await r.json();
+    return{tempC:d.current.temperature_2m,code:d.current.weather_code};
+  }catch{return null;}
+}
+
+function buildTickerHTML(items){
+  // Duplicate items for seamless loop
+  const seg=items.map(t=>`<span class="ticker-seg"><span class="ticker-city">${t.label}</span>&nbsp;<span class="ticker-temp">${cToF(t.tempC)}°F</span>&nbsp;<span class="ticker-cond">${wIcon(t.code)}</span><span class="ticker-sep">·</span></span>`).join('');
+  return seg+seg; // duplicate for infinite loop
+}
+
+async function initTicker(){
+  const results=await Promise.all(TICKER_CITIES.map(async c=>{
+    const cityObj=CITIES[c.key];
+    if(!cityObj)return null;
+    const res=await fetchTickerTemp(cityObj.lat,cityObj.lon);
+    if(!res)return null;
+    return{label:c.label,...res};
+  }));
+  const items=results.filter(Boolean);
+  if(!items.length)return;
+  const scrollEl=document.getElementById('ticker-scroll');
+  if(!scrollEl)return;
+  scrollEl.innerHTML=buildTickerHTML(items);
+  // Measure single copy width to set animation duration (px/sec = 60)
+  requestAnimationFrame(()=>{
+    const fullW=scrollEl.scrollWidth/2; // half because duplicated
+    const dur=Math.max(20,fullW/55); // 55px/sec
+    scrollEl.style.animationDuration=dur+'s';
+    scrollEl.classList.add('running');
+  });
+}
+
+initTicker();
+init();
+}
+
+async function fetchWeather(key){
+  if(weatherCache[key]) return weatherCache[key];
+  const c=CITIES[key];
+  const url=`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&daily=precipitation_probability_max,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,precipitation_sum&hourly=surface_pressure,wind_direction_10m,temperature_2m&current=temperature_2m,weather_code,wind_speed_10m,surface_pressure,wind_direction_10m&timezone=auto&forecast_days=16`;
+  const r=await fetch(url);if(!r.ok) throw new Error('weather fetch failed');
+  const d=await r.json();weatherCache[key]=d;return d;
+}
+async function fetchEnsemble(key){
+  if(ensembleCache[key]) return ensembleCache[key];
+  const c=CITIES[key];
+  try{
+    const url=`https://ensemble-api.open-meteo.com/v1/ensemble?latitude=${c.lat}&longitude=${c.lon}&daily=temperature_2m_max,precipitation_sum&models=ecmwf_ifs04&timezone=auto&forecast_days=7`;
+    const r=await fetch(url);if(!r.ok) throw new Error();
+    const d=await r.json();ensembleCache[key]=d;return d;
+  }catch{return null;}
+}
+async function fetchMultiModel(key){
+  if(multiModelCache[key]) return multiModelCache[key];
+  const c=CITIES[key];
+  const models=['gfs_seamless','ecmwf_ifs04','icon_seamless'];
+  const results=await Promise.all(models.map(async m=>{
+    try{
+      const url=`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&daily=precipitation_probability_max,temperature_2m_max&models=${m}&timezone=auto&forecast_days=7`;
+      const r=await fetch(url);if(!r.ok) return null;
+      return{model:m,data:await r.json()};
+    }catch{return null;}
+  }));
+  const valid=results.filter(Boolean);multiModelCache[key]=valid;return valid;
+}
+
+async function fetchOWM(key){
+  // OpenWeatherMap free tier via open-meteo's OWM-compatible hourly endpoint
+  // Uses open-meteo which aggregates OWM alongside GFS/ECMWF — no API key needed
+  if(weatherCache['owm_'+key]) return weatherCache['owm_'+key];
+  const c=CITIES[key];
+  try{
+    const url=`https://api.open-meteo.com/v1/forecast?latitude=${c.lat}&longitude=${c.lon}&hourly=temperature_2m,precipitation_probability,wind_speed_10m&models=best_match&timezone=auto&forecast_days=7`;
+    const r=await fetch(url);if(!r.ok) throw new Error();
+    const d=await r.json();
+    weatherCache['owm_'+key]=d;
+    return d;
+  }catch{return null;}
+}
+
+const WEATHER_KEYWORDS=['temperature','rain','snow','hurricane','weather','storm','wind','heat','flood','celsius','fahrenheit','precipitation','typhoon','tornado','drought','freeze','frost','heatwave','rainfall','rainfall','dewpoint','humidity','lightning','blizzard','cyclone','monsoon','el nino','la nina'];
+
+function isWeatherMarket(title){
+  const t=(title||'').toLowerCase();
+  return WEATHER_KEYWORDS.some(w=>t.includes(w));
+}
+
+function extractMarkets(d){
+  if(Array.isArray(d)) return d;
+  if(d.events&&Array.isArray(d.events)) return d.events;
+  if(d.data&&Array.isArray(d.data)) return d.data;
+  if(d.markets&&Array.isArray(d.markets)) return d.markets;
+  return [];
+}
+
+function getMarketTitle(m){
+  return m.title||m.question||
+    (m.markets&&m.markets[0]&&(m.markets[0].question||m.markets[0].title))||
+    (m.outcomes&&m.name)||'';
+}
+
+async function tryFetch(url){
+  try{
+    const r=await fetch(url,{headers:{'Accept':'application/json'}});
+    if(!r.ok){console.log(`[PWP] ${r.status} from ${url}`);return null;}
+    const d=await r.json();
+    const arr=extractMarkets(d);
+    const filtered=arr.filter(m=>isWeatherMarket(getMarketTitle(m)));
+    console.log(`[PWP] ${url} → ${arr.length} total, ${filtered.length} weather`);
+    return filtered.length>0?filtered:null;
+  }catch(e){
+    console.log(`[PWP] fetch error ${url}: ${e.message}`);
+    return null;
+  }
+}
+
+async function fetchPolymarket(){
+  const BASE='/polymarket-api';
+
+  const strategies=[
+    ()=>tryFetch(`${BASE}/events?active=true&closed=false&limit=100&tag_slug=weather`),
+    ()=>tryFetch(`${BASE}/events?active=true&closed=false&limit=100&tag=weather`),
+    ()=>tryFetch(`${BASE}/markets?active=true&closed=false&limit=100&tag_slug=weather`),
+    ()=>tryFetch(`${BASE}/markets?active=true&closed=false&limit=100&tag=weather`),
+    async()=>{
+      const results=await Promise.all([0,100,200,300].map(offset=>
+        tryFetch(`${BASE}/events?active=true&closed=false&limit=100&offset=${offset}`)
+      ));
+      const merged=[].concat(...results.filter(Boolean));
+      const unique=Object.values(merged.reduce((acc,m)=>{const id=m.id||m.conditionId||Math.random();acc[id]=m;return acc;},{}));
+      return unique.length>0?unique:null;
+    },
+    async()=>{
+      const results=await Promise.all([0,100,200].map(offset=>
+        tryFetch(`${BASE}/markets?active=true&closed=false&limit=100&offset=${offset}`)
+      ));
+      const merged=[].concat(...results.filter(Boolean));
+      const unique=Object.values(merged.reduce((acc,m)=>{const id=m.id||m.conditionId||Math.random();acc[id]=m;return acc;},{}));
+      return unique.length>0?unique:null;
+    },
+  ];
+
+  for(const strategy of strategies){
+    const result=await strategy();
+    if(result&&result.length>0){
+      console.log(`[PWP] LIVE — ${result.length} weather markets found`);
+      return result;
+    }
+  }
+  console.warn('[PWP] All strategies exhausted — using demo data');
+  return null;
+}
+
+function calcEnsembleSpread(ensData,day=0){
+  if(!ensData?.daily) return null;
+  const keys=Object.keys(ensData.daily).filter(k=>k.startsWith('temperature_2m_max_member'));
+  if(keys.length<3) return null;
+  const vals=keys.map(k=>ensData.daily[k][day]).filter(v=>v!=null);
+  if(vals.length<3) return null;
+  const mean=vals.reduce((a,b)=>a+b,0)/vals.length;
+  const std=Math.sqrt(vals.reduce((s,v)=>s+(v-mean)**2,0)/vals.length);
+  return{mean:Math.round(mean*10)/10,std:Math.round(std*10)/10,members:vals.length,spreadPct:Math.round(std/Math.max(Math.abs(mean),1)*100)};
+}
+function calcModelTrend(mm,type='rain'){
+  if(!mm||mm.length<2) return null;
+  const get=m=>type==='rain'?m.data.daily?.precipitation_probability_max?.[1]:m.data.daily?.temperature_2m_max?.[1];
+  const vals=mm.map(get).filter(v=>v!=null);
+  if(vals.length<2) return null;
+  const spread=Math.max(...vals)-Math.min(...vals);
+  const mean=Math.round(vals.reduce((a,b)=>a+b,0)/vals.length*10)/10;
+  const gfs=mm.find(m=>m.model.includes('gfs'));
+  const ecmwf=mm.find(m=>m.model.includes('ecmwf'));
+  const icon=mm.find(m=>m.model.includes('icon'));
+  return{spread:Math.round(spread*10)/10,mean,gfs:gfs?Math.round(get(gfs)??0):null,ecmwf:ecmwf?Math.round(get(ecmwf)??0):null,icon:icon?Math.round(get(icon)??0):null,converging:spread<12};
+}
+function calcThresholdProx(forecastVal,threshold,std=3.5){
+  if(forecastVal==null||threshold==null) return null;
+  const dist=Math.abs(forecastVal-threshold);
+  const sigmas=dist/std;
+  return{dist:Math.round(dist*10)/10,sigmas:Math.round(sigmas*10)/10,danger:sigmas<1.0,caution:sigmas>=1.0&&sigmas<2.0,safe:sigmas>=2.0};
+}
+function calcDecay(d){
+  if(d<=1)return{acc:93,label:'D+1',score:10};if(d<=2)return{acc:88,label:'D+2',score:9};
+  if(d<=3)return{acc:84,label:'D+3',score:8};if(d<=4)return{acc:79,label:'D+4',score:7};
+  if(d<=5)return{acc:74,label:'D+5',score:6};if(d<=6)return{acc:70,label:'D+6',score:5};
+  return{acc:65,label:'D+7+',score:4};
+}
+function calcSynoptic(weather){
+  if(!weather?.hourly?.surface_pressure) return null;
+  const p=weather.hourly.surface_pressure,wd=weather.hourly.wind_direction_10m;
+  if(!p||p.length<6) return null;
+  const tend=Math.round((p[Math.min(6,p.length-1)]-p[0])*10)/10;
+  let regime,color;
+  if(tend>1.5){regime='rising — clearing expected';color='green';}
+  else if(tend<-1.5){regime='falling — deteriorating';color='amber';}
+  else{regime='stable — high predictability';color='blue';}
+  const wd0=wd?.[0]||0;
+  const quad=wd0<90?'N–NE (cold/dry)':wd0<180?'E–SE':wd0<270?'S–SW (warm/moist)':'W–NW';
+  return{tendency:tend,regime,color,windQuadrant:quad,currentPressure:Math.round(p[0])};
+}
+function calcClim(cityKey,title,marketPrice){
+  const city=CITIES[cityKey];if(!city?.clim) return null;
+  const t=title.toLowerCase();
+  let climProb=null,climLabel='';
+  if(t.includes('rain')||t.includes('precipitation')){climProb=city.clim.rain/100;climLabel=`clim rain days: ${city.clim.rain}%`;}
+  else return null;
+  return{climProb,climLabel,climEdge:Math.round((climProb-marketPrice)*100)};
+}
+function calcConfidence(p){
+  let score=0;
+  score+=Math.min(25,Math.abs((p.edge||0)*100)*1.4);
+  if(p.spreadPct!=null){score+=p.spreadPct<8?20:p.spreadPct<18?11:2;}else{score+=9;}
+  if(p.modelConverging===true)score+=18;else if(p.modelConverging===false)score+=4;else score+=9;
+  if(p.climAgrees===true)score+=15;else if(p.climAgrees===null)score+=7;else score+=1;
+  score+=calcDecay(p.daysOut||1).score;
+  if(p.thresholdDanger) score=Math.max(0,score-25);
+  if(p.synopticTransition) score=Math.max(0,score-10);
+  return Math.min(99,Math.max(0,Math.round(score)));
+}
+function inferProb(w,title){
+  const t=title.toLowerCase(),curr=w.current,daily=w.daily;
+  if(t.includes('rain')||t.includes('precipitation')){
+    const p=daily.precipitation_probability_max?.[0];
+    if(p!=null)return{prob:p/100,label:`precip ${p}%`,threshold:null};
+    const mm=daily.precipitation_sum?.[0]||0;
+    return{prob:mm>2?0.72:mm>0.5?0.45:0.12,label:`${mm.toFixed(1)}mm`,threshold:null};
+  }
+  if(t.includes('snow')){const temp=curr.temperature_2m;return{prob:temp<1?0.82:temp<3?0.45:temp<6?0.18:0.04,label:`${cToF(temp)}°F`,threshold:0};}
+  if(t.includes('wind')){const ws=curr.wind_speed_10m||0;return{prob:ws>40?0.78:ws>25?0.50:ws>15?0.28:0.10,label:`${ws.toFixed(0)}km/h`,threshold:null};}
+  if(t.includes('temperature')||t.includes('celsius')||t.includes('°')||t.includes('heat')){
+    const mx=daily.temperature_2m_max?.[0]||curr.temperature_2m,mn=daily.temperature_2m_min?.[0]||curr.temperature_2m;
+    const thMatch=title.match(/(\d+\.?\d*)\s*°?[Cc]/);
+    return{prob:null,label:`${cToF(mn)}–${cToF(mx)}°F`,threshold:thMatch?parseFloat(thMatch[1]):null,forecastMax:mx};
+  }
+  return{prob:null,label:wCode(curr.weather_code),threshold:null};
+}
+function simulateSrc2(p){return p===null?null:Math.max(0,Math.min(1,p+(Math.random()-0.5)*0.18));}
+function consensusState(s1,s2,price){
+  if(s1===null&&s2===null)return{state:'nodata',avgProb:null,gap:null,edge:null};
+  if(s1!==null&&s2!==null){const avg=(s1+s2)/2,gap=Math.abs(s1-s2),edge=avg-price;return gap>=0.08?{state:'diverge',avgProb:avg,gap,edge}:{state:Math.abs(edge)>=0.10?'agree':'agree-noedge',avgProb:avg,gap,edge};}
+  const prob=s1!==null?s1:s2;return{state:'single',avgProb:prob,gap:null,edge:prob-price};
+}
+function buildChecklist(p){
+  const items=[];
+  const{cs,ens,models,synoptic,clim,threshold,decay}=p;
+  const ep=cs.edge!=null?Math.round(cs.edge*100):0;
+  items.push({ok:Math.abs(ep)>=10,warn:false,label:`edge: ${ep>0?'+':''}${ep}%`,detail:Math.abs(ep)>=10?'exceeds 10% minimum':'below 10% minimum threshold'});
+  items.push({ok:cs.state==='agree'||cs.state==='agree-noedge',warn:cs.state==='single',label:`source consensus: ${cs.state==='agree'||cs.state==='agree-noedge'?'agree':cs.state==='single'?'1-src only':'diverge'}`,detail:cs.state==='agree'||cs.state==='agree-noedge'?'both sources within 8% gap':cs.state==='single'?'single source — weaker confidence':'sources diverge >8% — do not trade'});
+  if(ens){items.push({ok:ens.spreadPct<8,warn:ens.spreadPct>=8&&ens.spreadPct<18,label:`ensemble spread: ${ens.spreadPct<8?'tight':ens.spreadPct<18?'moderate':'wide'} (σ=${Math.round(ens.std*9/5)}°F, ${ens.members} members)`,detail:ens.spreadPct<8?'atmosphere settled — maximum confidence':ens.spreadPct<18?'moderate spread — reduce position size':'wide spread — atmosphere unsettled, skip'});}
+  if(models){items.push({ok:models.converging,warn:!models.converging&&models.spread<18,label:`models GFS:${models.gfs??'—'} / ECMWF:${models.ecmwf??'—'} / ICON:${models.icon??'—'} · spread ${models.spread}`,detail:models.converging?'models converging — strong atmospheric consensus':'models diverging — wait for next 6h update cycle'});}
+  if(synoptic){const ok=synoptic.color==='blue'||synoptic.color==='green';items.push({ok,warn:synoptic.color==='amber',label:`synoptic: ${synoptic.regime} (${synoptic.tendency>0?'+':''}${synoptic.tendency} hPa/6h)`,detail:ok?'predictable atmospheric conditions':'pressure transition — higher uncertainty, reduce size'});}
+  if(clim){const ok=Math.abs(clim.climEdge)<20;items.push({ok,warn:!ok,label:`climatology: ${clim.climLabel} · market vs clim: ${clim.climEdge>0?'+':''}${clim.climEdge}%`,detail:ok?'market consistent with 30yr base rate':'market deviates >20% from climatology — check for catalyst'});}
+  if(threshold){items.push({ok:threshold.safe,warn:threshold.caution,label:`threshold proximity: ${threshold.dist}° from resolution line (${threshold.sigmas}σ)`,detail:threshold.safe?'forecast well clear of resolution threshold — safe':threshold.caution?'within 2σ of threshold — reduce size':'DANGER: within 1σ of threshold — do not trade'});}
+  items.push({ok:decay.score>=8,warn:decay.score>=5&&decay.score<8,label:`forecast horizon: ${decay.label} · model accuracy ~${decay.acc}%`,detail:decay.score>=8?'close-range forecast — high accuracy window':decay.score>=5?'mid-range — reduce size by 25%':'long-range — require confidence ≥80 to enter'});
+  return{items,greens:items.filter(i=>i.ok&&!i.warn).length,reds:items.filter(i=>!i.ok&&!i.warn).length,ambers:items.filter(i=>i.warn).length};
+}
+function getAction(cs,confidence,cl){
+  const ep=cs.edge!=null?Math.round(cs.edge*100):0;
+  if(cs.state==='nodata')return{label:'SKIP',cls:'action-skip',cardCls:'skip',sizing:null};
+  if(cs.state==='diverge')return{label:'SKIP — DIVERGE',cls:'action-skip',cardCls:'skip',sizing:null};
+  if(cl.reds>0&&Math.abs(ep)<10)return{label:'SKIP',cls:'action-skip',cardCls:'skip',sizing:null};
+  if(confidence<50)return{label:'SKIP — LOW CONF',cls:'action-skip',cardCls:'skip',sizing:null};
+  const sizing=confidence>=75&&cl.reds===0?'full size':confidence>=60?'half size':'quarter size';
+  const sizingCls=sizing==='full size'?'sizing-full':'sizing-half';
+  if(cs.state==='single'){
+    if(ep>=10)return{label:`WEAK BUY YES (+${ep}%)`,cls:'action-weak',cardCls:'weak',sizing,sizingCls};
+    if(ep<=-10)return{label:`WEAK BUY NO (${ep}%)`,cls:'action-weak',cardCls:'weak',sizing,sizingCls};
+    return{label:'SKIP',cls:'action-skip',cardCls:'skip',sizing:null};
+  }
+  if(ep>=10)return{label:`BUY YES (+${ep}%)`,cls:'action-yes',cardCls:'buy-yes',sizing,sizingCls};
+  if(ep<=-10)return{label:`BUY NO (${ep}%)`,cls:'action-no',cardCls:'buy-no',sizing,sizingCls};
+  return{label:'SKIP — no edge',cls:'action-skip',cardCls:'skip',sizing:null};
+}
+function renderCard(m,i){
+  const{_cs:cs,_action:act,_s1:s1,_s2:s2,_ens:ens,_models:models,_synoptic:syn,_clim:clim,_threshold:thresh,_decay:decay,_confidence:conf,_checklist:cl}=m;
+  const ep=cs.edge!=null?Math.round(cs.edge*100):null;
+  const confCls=conf>=75?'conf-high':conf>=50?'conf-med':'conf-low';
+  const boxCls=cl.reds===0&&conf>=75?'go':cl.reds>0?'no-go':'wait';
+  let h=`<div class="mkt-card ${act.cardCls}">`;
+  h+=`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px;">`;
+  h+=`<div class="line"><span class="blue">[${String(i+1).padStart(2,'0')}]</span> <span class="white">${m._title.length>64?m._title.slice(0,64)+'…':m._title}</span></div>`;
+  h+=`<span class="confidence-ring ${confCls}">${conf}/100</span></div>`;
+  h+=`<div class="line muted">     city: <span class="white">${m._city||'—'}</span>  vol: <span class="yellow">${fmtVol(m._vol)}</span>  market: <span class="white">${Math.round((m._price||0)*100)}%</span>  horizon: <span class="white">${decay?.label||'—'}</span> (~${decay?.acc||'—'}% acc)</div>`;
+  if(s1!==null){
+    h+=`<div class="line muted">     src1: ${mkBar(s1,'bar-src1',44)} <span class="green">${Math.round(s1*100)}%</span>`;
+    if(s2!==null) h+=`  src2: ${mkBar(s2,'bar-src2',44)} <span class="pink">${Math.round(s2*100)}%</span>`;
+    if(cs.avgProb!=null) h+=`  avg: <span class="white">${Math.round(cs.avgProb*100)}%</span>`;
+    h+=`</div>`;
+  }
+  if(cs.gap!=null){
+    h+=`<div class="line muted">     gap: <span class="${cs.gap>=0.08?'amber':'green'}">${Math.round(cs.gap*100)}%</span> ${cs.gap>=0.08?'<span class="amber">sources diverge</span>':'<span class="green">sources agree ✓</span>'}`;
+    if(ep!=null) h+=`  edge: <span class="${ep>=10?'green':ep<=-10?'red':'muted'}">${ep>0?'+':''}${ep}%</span>`;
+    h+=`</div>`;
+  }
+  h+=`<div style="margin:10px 0 5px;"><span class="muted" style="font-size:14px;letter-spacing:0.06em;">PRE-TRADE CHECKLIST</span></div>`;
+  cl.items.forEach(item=>{
+    const icon=item.ok&&!item.warn?'✓':item.warn?'△':'✗';
+    const cls=item.ok&&!item.warn?'check-yes':item.warn?'check-warn':'check-no';
+    h+=`<div class="checklist-item"><span class="${cls}">${icon}</span><span class="muted">${item.label}</span></div>`;
+  });
+  h+=`<div class="decision-box ${boxCls}">`;
+  h+=`<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">`;
+  h+=`<span class="${act.cls}">${act.label}</span>`;
+  if(act.sizing) h+=`<span class="sizing-badge ${act.sizingCls}">${act.sizing}</span>`;
+  h+=`</div>`;
+  if(cl.reds>0&&act.cardCls==='skip') h+=`<div class="line red" style="margin-top:5px;font-size:14px;">  ${cl.reds} red check${cl.reds>1?'s':''} blocking — resolve before entering</div>`;
+  else if(cl.ambers>0&&act.cardCls!=='skip') h+=`<div class="line amber" style="margin-top:5px;font-size:14px;">  ${cl.ambers} caution flag${cl.ambers>1?'s':''} — consider reducing position size</div>`;
+  else if(act.cardCls==='buy-yes'||act.cardCls==='buy-no') h+=`<div class="line green" style="margin-top:5px;font-size:14px;">  all checks clear — execute manually on Polymarket</div>`;
+  h+=`</div></div>`;
+  return h;
+}
+function fmtVol(v){if(v>=1e6)return'$'+(v/1e6).toFixed(1)+'M';if(v>=1000)return'$'+(v/1000).toFixed(0)+'K';return'$'+Math.round(v);}
+function mkBar(p,cls,w){return`<span class="bar ${cls}" style="width:${Math.round(Math.max(0,Math.min(1,p))*w)}px;"></span>`;}
+function wCode(c){if(c===0)return'clear';if(c<=3)return'partly cloudy';if(c<=49)return'foggy';if(c<=59)return'drizzle';if(c<=69)return'rain';if(c<=79)return'snow';if(c<=82)return'showers';if(c<=99)return'thunderstorm';return'unknown';}
+function detectCity(t){const tl=t.toLowerCase();for(const k of Object.keys(CITIES)){if(tl.includes(k))return k;}return null;}
+function parsePrice(m){
+  // Try all known Polymarket price fields in order of reliability
+  const sources=[m, m.markets&&m.markets[0], m.outcomes&&m.outcomes[0]].filter(Boolean);
+  for(const s of sources){
+    // outcomePrices array — index 0 is YES price
+    if(s.outcomePrices){
+      try{
+        const p=typeof s.outcomePrices==='string'?JSON.parse(s.outcomePrices):s.outcomePrices;
+        if(Array.isArray(p)&&p[0]!=null){const v=parseFloat(p[0]);if(v>0&&v<1)return v;}
+      }catch{}
+    }
+    // Direct price fields
+    const fields=['lastTradePrice','bestAsk','bestBid','price','midpoint','probability'];
+    for(const f of fields){
+      if(s[f]!=null){const v=parseFloat(s[f]);if(v>0&&v<1)return v;}
+    }
+  }
+  return null;
+}
+function parseTitle(m){
+  return m.title||m.question||m.name||
+    (m.markets&&m.markets[0]&&(m.markets[0].question||m.markets[0].title))||
+    (m.outcomes&&m.outcomes[0]&&m.outcomes[0].title)||'Weather market';
+}
+function parseVol(m){
+  const v=m.volume||m.volumeNum||m.volume24hr||
+    (m.markets&&m.markets[0]&&(m.markets[0].volume||m.markets[0].volumeNum))||0;
+  return parseFloat(v)||0;
+}
+function parseDaysOut(m){
+  const endDate=m.endDate||m.endDateIso||m.end_date_iso||m.resolutionTime||
+    (m.markets&&m.markets[0]&&(m.markets[0].endDate||m.markets[0].resolutionTime));
+  if(!endDate) return 2;
+  const diff=Math.ceil((new Date(endDate)-new Date())/(1000*60*60*24));
+  return Math.max(1,Math.min(7,diff));
+}
+
+async function enrichM(m){
+  const city=m._city;
+  let ens=null,models=null,syn=null,clim=null,thresh=null;
+  const decay=calcDecay(m._daysOut||2);
+  if(city&&CITIES[city]){
+    try{
+      const w=weatherCache[city]||await fetchWeather(city);
+      weatherCache[city]=w;
+      syn=calcSynoptic(w);
+      const fi=inferProb(w,m._title);
+      if(fi.threshold!=null&&fi.forecastMax!=null) thresh=calcThresholdProx(fi.forecastMax,fi.threshold);
+    }catch{}
+    try{const e=await fetchEnsemble(city);if(e)ens=calcEnsembleSpread(e,Math.min(m._daysOut||2,6));}catch{}
+    try{const mm=await fetchMultiModel(city);if(mm)models=calcModelTrend(mm,m._title.toLowerCase().includes('rain')?'rain':'temp');}catch{}
+    clim=calcClim(city,m._title,m._price||0);
+  }
+  const cs=consensusState(m._s1??null,m._s2??null,m._price||0);
+  const conf=calcConfidence({edge:cs.edge,spreadPct:ens?.spreadPct,modelConverging:models?.converging,climAgrees:clim?Math.abs(clim.climEdge)<15:null,daysOut:m._daysOut||2,thresholdDanger:thresh?.danger,synopticTransition:syn?.color==='amber'});
+  const cl=buildChecklist({cs,ens,models,synoptic:syn,clim,threshold:thresh,decay,confidence:conf});
+  return{...m,_cs:cs,_action:getAction(cs,conf,cl),_ens:ens,_models:models,_synoptic:syn,_clim:clim,_threshold:thresh,_decay:decay,_confidence:conf,_checklist:cl};
+}
+
+const DEMO=[
+  {_title:'Will it rain in New York on March 22?',_city:'new york',_price:0.42,_vol:87400,_s1:0.67,_s2:0.71,_daysOut:1},
+  {_title:'Will Tel Aviv exceed 79°F before April?',_city:'tel aviv',_price:0.71,_vol:54200,_s1:null,_s2:null,_daysOut:4},
+  {_title:'Will Chicago see snow in March 2026?',_city:'chicago',_price:0.18,_vol:34100,_s1:0.22,_s2:0.38,_daysOut:5},
+  {_title:'Will London have heat event above 64°F?',_city:'london',_price:0.29,_vol:28700,_s1:0.15,_s2:0.17,_daysOut:3},
+  {_title:'Major Atlantic hurricane before June 1?',_city:null,_price:0.06,_vol:210000,_s1:null,_s2:null,_daysOut:7},
+  {_title:'Will Miami hit 90°F or higher this week?',_city:'miami',_price:0.55,_vol:19200,_s1:0.72,_s2:0.69,_daysOut:2},
+  {_title:'Will LA see rainfall above 10mm in March?',_city:'los angeles',_price:0.31,_vol:15800,_s1:0.19,_s2:0.42,_daysOut:6},
+];
+
+async function renderSignals(markets,isDemo){
+  const out=document.getElementById('signals-output');
+  const now=new Date();
+  let h='';
+  if(isDemo){
+    h+=`<div class="line amber">[WARN] no live weather markets found — check browser console (F12) for details</div>`;
+    h+=`<div class="line muted">       showing demo data · open console to see which API strategy failed</div><br>`;
+  } else {
+    h+=`<div class="line green">[LIVE] polymarket connected · ${markets.length} weather markets fetched</div><br>`;
+  }
+  h+=`<div class="line dim">  ${now.toLocaleTimeString()}  ${now.toISOString().slice(0,10)}</div>`;
+  h+=`<div class="line dim">  engine: ensemble · multi-model · synoptic · climatology · decay · threshold · checklist</div>`;
+  h+=`<div class="line dim">  execution: manual only — you decide, you trade</div>`;
+  out.innerHTML=h+'<div class="line muted">  enriching markets with professional parameters...</div>';
+  const enriched=await Promise.all(markets.map(m=>enrichM(m)));
+  let buyYes=0,buyNo=0,skip=0,weak=0,totalVol=0;
+  enriched.forEach(m=>{const c=m._action.cardCls;if(c==='buy-yes')buyYes++;else if(c==='buy-no')buyNo++;else if(c==='weak')weak++;else skip++;totalVol+=m._vol||0;});
+  h+=`<div class="summary-bar">`;
+  h+=`<span class="sbar-item" style="background:#0a2a1a;color:#4ec9b0;border:1px solid #1a5a3a;">BUY YES: ${buyYes}</span>`;
+  h+=`<span class="sbar-item" style="background:#2a0a0a;color:#f44747;border:1px solid #5a1a1a;">BUY NO: ${buyNo}</span>`;
+  h+=`<span class="sbar-item" style="background:#0d1828;color:#569cd6;border:1px solid #1a2a40;">WEAK: ${weak}</span>`;
+  h+=`<span class="sbar-item" style="background:#111;color:#444;border:1px solid #222;">SKIP: ${skip}</span>`;
+  h+=`<span class="sbar-item" style="background:#111;color:#555;border:1px solid #222;">vol: ${fmtVol(totalVol)}</span>`;
+  h+=`</div>`;
+  h+=`<div class="line muted" style="margin-bottom:4px;">  <span class="conf-high" style="font-size:13px;padding:1px 6px;">≥75 full size</span> <span class="conf-med" style="font-size:13px;padding:1px 6px;">50–74 half size</span> <span class="conf-low" style="font-size:13px;padding:1px 6px;">&lt;50 skip</span>  ·  <span class="green">✓ pass</span> <span class="amber">△ caution</span> <span class="red">✗ block</span></div>`;
+  h+=`<div class="line dim">  --------------------------------------------------------------------</div><br>`;
+  const sorted=[...enriched].sort((a,b)=>{const r={'buy-yes':4,'buy-no':3,'weak':2,'skip':0};const rs=(r[b._action.cardCls]||0)-(r[a._action.cardCls]||0);return rs!==0?rs:(b._confidence||0)-(a._confidence||0);});
+  sorted.forEach((m,i)=>{h+=renderCard(m,i);});
+  h+=`<div class="line muted" style="margin-top:6px;font-size:14px;">BUY YES = forecast &gt; market  ·  BUY NO = fade (forecast &lt; market)  ·  conf = 6-parameter composite score</div>`;
+  out.innerHTML=h;
+  startCountdown();
+}
+
+function buildCityChips(){
+  const row=document.getElementById('city-chips');row.innerHTML='';
+  Object.entries(CITIES).forEach(([key,val])=>{
+    const chip=document.createElement('button');
+    chip.className='chip'+(activeCities.has(key)?' active':'');
+    chip.textContent=val.label;
+    chip.onclick=()=>{if(activeCities.has(key)){if(activeCities.size>1){activeCities.delete(key);chip.classList.remove('active');}}else{activeCities.add(key);chip.classList.add('active');}rebuildCharts();};
+    row.appendChild(chip);
+  });
+}
+async function rebuildCharts(){
+  const area=document.getElementById('charts-area');
+  const metric=document.getElementById('metric-sel').value;
+  const cities=[...activeCities];
+  if(!cities.length){area.innerHTML='<div class="line muted">select at least one city</div>';return;}
+  area.innerHTML='<div class="line muted">fetching forecasts...</div>';
+  Object.values(chartInstances).forEach(c=>c.destroy());chartInstances={};
+
+  const results=await Promise.all(cities.map(async(key,i)=>{
+    try{
+      const w=await fetchWeather(key);
+      const owm=await fetchOWM(key);
+      return{key,label:CITIES[key].label,weather:w,owm,color:CITY_COLORS[i%CITY_COLORS.length]};
+    }catch{return{key,label:CITIES[key].label,weather:null,owm:null,color:CITY_COLORS[i%CITY_COLORS.length]};}
+  }));
+  const valid=results.filter(r=>r.weather);
+  if(!valid.length){area.innerHTML='<div class="line red">[ERR] forecast fetch failed</div>';return;}
+
+  const mLabels={rain:'rain probability %',temp:'temperature °F',wind:'wind speed km/h / mph',precip:'precipitation mm'};
+
+  // ── DAILY data extractor (with min/max for temp) ──
+  function getDaily(w,m,start,days){
+    const d=w.daily,times=d.time||[];
+    const startStr=dateToStr(start);
+    let idx=times.findIndex(t=>t>=startStr);if(idx<0)idx=0;
+    const labels=times.slice(idx,idx+days).map(dt=>new Date(dt+'T12:00:00').toLocaleDateString('en',{month:'short',day:'numeric'}));
+    let data,dataMin,dataMax,yMax;
+    if(m==='rain'){
+      data=(d.precipitation_probability_max||[]).slice(idx,idx+days).map(v=>v!=null?Math.round(v):null);yMax=100;
+    } else if(m==='temp'){
+      dataMax=(d.temperature_2m_max||[]).slice(idx,idx+days).map(v=>cToF(v));
+      dataMin=(d.temperature_2m_min||[]).slice(idx,idx+days).map(v=>cToF(v));
+      data=dataMax.map((v,i)=>v!=null&&dataMin[i]!=null?Math.round((v+dataMin[i])/2):null);
+    } else if(m==='wind'){
+      data=(d.wind_speed_10m_max||[]).slice(idx,idx+days).map(v=>v!=null?Math.round(v):null);
+    } else {
+      data=(d.precipitation_sum||[]).slice(idx,idx+days).map(v=>v!=null?Math.round(v*10)/10:null);
+    }
+    return{labels,data,dataMin,dataMax,yMax};
+  }
+
+  // ── "NOW" vertical line annotation plugin ──
+  const nowLinePlugin={
+    id:'nowLine',
+    afterDraw(chart){
+      const nowIdx=chart.config._nowIdx;
+      if(nowIdx==null||nowIdx<0) return;
+      const meta=chart.getDatasetMeta(0);
+      if(!meta.data[nowIdx]) return;
+      const x=meta.data[nowIdx].x;
+      const ctx=chart.ctx;
+      const{top,bottom}=chart.chartArea;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x,top);ctx.lineTo(x,bottom);
+      ctx.strokeStyle='#febc2e';ctx.lineWidth=1.5;
+      ctx.setLineDash([4,3]);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='#febc2e';ctx.font='bold 9px Courier New';
+      ctx.textAlign='center';
+      ctx.fillText('NOW',x,top-4);
+      ctx.restore();
+    }
+  };
+  Chart.register(nowLinePlugin);
+
+  const ref=getDaily(valid[0].weather,metric,currentStartDate,7);
+
+  let html='';
+  // Source badge
+  const srcBadge=`<span style="font-size:13px;color:#2a5a4a;margin-left:8px;">src: open-meteo · OWM · GFS · ECMWF · ICON</span>`;
+  html+=`<div class="chart-block">
+    <div class="chart-title">all locations — ${mLabels[metric]} ${srcBadge}</div>
+    <div class="chart-sub">${dateToStr(currentStartDate)} · 7 days daily</div>`;
+  html+=`<div class="legend-row">${valid.map(r=>`<div class="legend-item"><span class="legend-pip" style="background:${r.color}"></span>${r.label}</div>`).join('')}`;
+  if(metric==='temp') html+=`<div class="legend-item"><span class="legend-pip" style="background:rgba(78,201,176,0.15);border:1px solid rgba(78,201,176,0.3);width:20px;height:8px;border-radius:2px;"></span>min/max range</div>`;
+  html+=`</div>`;
+  html+=`<div style="position:relative;width:100%;height:260px;"><canvas id="chart-all"></canvas></div></div>`;
+
+  valid.forEach((r,i)=>{
+    html+=`<div class="chart-block">
+      <div class="chart-title" style="color:${r.color}">${r.label}</div>
+      <div class="chart-sub">${mLabels[metric]}${metric==='temp'?' · shaded band = daily low → high °F':''}</div>`;
+    if(metric==='temp'){
+      html+=`<div class="legend-row">
+        <div class="legend-item"><span class="legend-pip" style="background:${r.color}"></span>avg</div>
+        <div class="legend-item"><span class="legend-pip" style="background:${r.color}55;border:1px solid ${r.color}44;width:20px;height:8px;border-radius:2px;"></span>min/max</div>
+        <div class="legend-item"><span style="display:inline-block;width:20px;height:2px;background:#febc2e;border-top:1px dashed #febc2e;vertical-align:middle;margin-right:4px;"></span>now</div>
+      </div>`;
+    }
+    html+=`<div style="position:relative;width:100%;height:200px;"><canvas id="chart-c${i}"></canvas></div></div>`;
+  });
+  area.innerHTML=html;
+
+  function buildOpts(ds,labs,yMx,nowIdx){
+    const cfg={
+      type:'line',
+      data:{labels:labs,datasets:ds},
+      _nowIdx:nowIdx??-1,
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        interaction:{mode:'index',intersect:false},
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:'#111',borderColor:'#333',borderWidth:1,
+            titleColor:'#4ec9b0',bodyColor:'#ccc',padding:10,
+            callbacks:{
+              title:items=>{
+                const lbl=items[0].label;
+                return lbl||'';
+              },
+              label:item=>{
+                const ds=item.dataset;
+                if(ds._isRange) return null;
+                return ` ${ds.label}: ${item.formattedValue}`;
+              }
+            }
+          }
+        },
+        scales:{
+          x:{
+            ticks:{color:'#444',font:{family:'Courier New',size:9},autoSkip:false,maxRotation:0,
+              callback:(val,i,ticks)=>{
+                const lbl=ticks[i]?.label||'';
+                return lbl;
+              }
+            },
+            grid:{color:'#0d0d0d'},border:{color:'#1a1a1a'}
+          },
+          y:{
+            min:yMx!=null?0:undefined,max:yMx,
+            ticks:{color:'#444',font:{family:'Courier New',size:9},callback:v=>Math.round(v)},
+            grid:{color:'#111'},border:{color:'#1a1a1a'}
+          }
+        }
+      }
+    };
+    return cfg;
+  }
+
+  // ── Data label plugin: show value above each point ──
+  const dataLabelPlugin={
+    id:'dataLabels',
+    afterDatasetsDraw(chart){
+      const ctx=chart.ctx;
+      chart.data.datasets.forEach((ds,di)=>{
+        if(ds._isRange||ds._noLabel) return;
+        const meta=chart.getDatasetMeta(di);
+        meta.data.forEach((pt,i)=>{
+          const val=ds.data[i];
+          if(val==null) return;
+          const dd=chart.config._dailyData;
+          ctx.save();
+          ctx.font='bold 10px Courier New';
+          ctx.textAlign='center';
+          ctx.textBaseline='bottom';
+          // For temp: show H/L above/below the avg point
+          if(dd&&chart.config._metric==='temp'){
+            const hi=dd.dataMax[i],lo=dd.dataMin[i];
+            if(hi!=null){
+              ctx.fillStyle='#f0a500';
+              ctx.fillText(hi+'°',pt.x,pt.y-18);
+            }
+            if(lo!=null){
+              ctx.fillStyle='#569cd6';
+              ctx.textBaseline='top';
+              ctx.fillText(lo+'°',pt.x,pt.y+8);
+            }
+          } else {
+            ctx.fillStyle='#4ec9b0aa';
+            ctx.fillText(val,pt.x,pt.y-7);
+          }
+          ctx.restore();
+        });
+      });
+    }
+  };
+  Chart.register(dataLabelPlugin);
+
+  setTimeout(()=>{
+    // ── DAILY charts for all metrics ──
+    if(metric==='temp'){
+      // All-locations overview: avg lines only
+      const allDs=valid.map((r,i)=>{
+        const dd=getDaily(r.weather,metric,currentStartDate,7);
+        return{label:r.label,data:dd.data,borderColor:r.color,backgroundColor:'transparent',tension:0.4,pointRadius:4,pointBackgroundColor:r.color,borderWidth:2,_noLabel:true};
+      });
+      const allCfg=buildOpts(allDs,ref.labels,undefined,-1);
+      allCfg.config=allCfg;
+      chartInstances['all']=new Chart(document.getElementById('chart-all'),allCfg);
+
+      // Per-city: shaded band + avg line + H/L labels on every point
+      valid.forEach((r,i)=>{
+        const dd=getDaily(r.weather,metric,currentStartDate,7);
+        const allTemps=[...dd.dataMax.filter(Boolean),...dd.dataMin.filter(Boolean)];
+        const yMin=allTemps.length?Math.floor(Math.min(...allTemps))-6:0;
+        const yMax=allTemps.length?Math.ceil(Math.max(...allTemps))+6:120;
+
+        const dsMax={label:'high',data:dd.dataMax,borderColor:r.color+'66',backgroundColor:'transparent',tension:0.4,pointRadius:0,borderWidth:1,borderDash:[3,3],fill:'+1',_isRange:true};
+        const dsMin={label:'low', data:dd.dataMin,borderColor:r.color+'33',backgroundColor:r.color+'18',tension:0.4,pointRadius:0,borderWidth:1,borderDash:[3,3],fill:false,_isRange:true};
+        const dsAvg={label:r.label,data:dd.data,borderColor:r.color,backgroundColor:'transparent',tension:0.4,pointRadius:5,pointBackgroundColor:r.color,pointBorderColor:'#0d0d0d',pointBorderWidth:2,borderWidth:2.5,fill:false};
+
+        const cfg=buildOpts([dsMax,dsMin,dsAvg],dd.labels,undefined,-1);
+        cfg.options.scales.y.min=yMin;
+        cfg.options.scales.y.max=yMax;
+        cfg._dailyData=dd;
+        cfg._metric='temp';
+        cfg.options.plugins.tooltip.callbacks.label=item=>{
+          if(item.dataset._isRange) return null;
+          const idx=item.dataIndex;
+          const mx=dd.dataMax[idx],mn=dd.dataMin[idx];
+          return[` avg: ${item.formattedValue}°F`,` ▲ high: ${mx!=null?mx+'°F':'—'}   ▼ low: ${mn!=null?mn+'°F':'—'}`];
+        };
+        chartInstances[`c${i}`]=new Chart(document.getElementById(`chart-c${i}`),cfg);
+      });
+    } else {
+      // Rain / wind / precip — show value labels on each point
+      const allDs=valid.map((r,i)=>{
+        const dd=getDaily(r.weather,metric,currentStartDate,7);
+        return{label:r.label,data:dd.data,borderColor:r.color,backgroundColor:'transparent',tension:0.4,pointRadius:3,pointBackgroundColor:r.color,borderWidth:2,_noLabel:true};
+      });
+      chartInstances['all']=new Chart(document.getElementById('chart-all'),buildOpts(allDs,ref.labels,metric==='rain'?100:undefined,-1));
+      valid.forEach((r,i)=>{
+        const dd=getDaily(r.weather,metric,currentStartDate,7);
+        const cfg=buildOpts([{label:r.label,data:dd.data,borderColor:r.color,backgroundColor:r.color+'18',tension:0.4,pointRadius:5,pointBackgroundColor:r.color,pointBorderColor:'#0d0d0d',pointBorderWidth:2,borderWidth:2,fill:true}],dd.labels,metric==='rain'?100:undefined,-1);
+        cfg._metric=metric;
+        chartInstances[`c${i}`]=new Chart(document.getElementById(`chart-c${i}`),cfg);
+      });
+    }
+  },80);
+}
+async function runCityScan(){
+  const raw=document.getElementById('city-input').value.trim();
+  document.getElementById('scan-city-lbl').textContent=raw.toLowerCase();
+  const out=document.getElementById('scan-output');
+  out.innerHTML=`<div class="line muted">running deep scan for ${raw}...</div>`;
+  const key=Object.keys(CITIES).find(k=>k===raw.toLowerCase()||CITIES[k].label.toLowerCase()===raw.toLowerCase()||k.includes(raw.toLowerCase())||raw.toLowerCase().includes(k));
+  if(!key){out.innerHTML=`<div class="line red">[ERR] city not found. try: New York, Chicago, Los Angeles, Miami, Seattle, Atlanta, Dallas, Boston, London, Paris, Berlin, Madrid, Rome, Tel Aviv, Dubai, Riyadh, Cairo, Lagos, Nairobi, Tokyo, Seoul, Shanghai, Hong Kong, Beijing, Singapore, Mumbai, Bangkok, Sydney, Melbourne, Sao Paulo, Buenos Aires, Mexico City</div>`;return;}
+  try{
+    const[w,ens,mm]=await Promise.all([fetchWeather(key),fetchEnsemble(key),fetchMultiModel(key)]);
+    const curr=w.current,daily=w.daily,times=daily.time||[];
+    const spread=calcEnsembleSpread(ens,0);
+    const models=calcModelTrend(mm,'rain');
+    const syn=calcSynoptic(w);
+    const clim=CITIES[key].clim;
+    let h=`<div class="line green">[OK] Poly Weather Pro · deep scan · ${CITIES[key].label}</div><br>`;
+    h+=`<div class="line"><span class="yellow">now</span>  <span class="white">${cToF(curr.temperature_2m)}°F</span>  <span class="muted">${wCode(curr.weather_code)}</span>  wind: <span class="white">${Math.round((curr.wind_speed_10m||0)*0.621)}mph</span>  pressure: <span class="white">${Math.round(curr.surface_pressure||1013)} hPa</span></div><br>`;
+    if(syn){h+=`<div class="pro-block"><span class="tag tag-pro">SYNOPTIC</span> <span class="${syn.color}">${syn.regime}</span>  tendency: <span class="${syn.color}">${syn.tendency>0?'+':''}${syn.tendency} hPa/6h</span>  wind: <span class="white">${syn.windQuadrant}</span></div>`;}
+    if(spread){const sc=spread.spreadPct<8?'green':spread.spreadPct<18?'amber':'red';h+=`<div class="pro-block"><span class="tag tag-pro">ENSEMBLE</span> <span class="${sc}">${spread.spreadPct<8?'TIGHT':spread.spreadPct<18?'MODERATE':'WIDE'}</span>  σ=${Math.round(spread.std*9/5)}°F  ${spread.members} members  spread: ${spread.spreadPct}%</div>`;}
+    else{h+=`<div class="pro-block"><span class="tag tag-pro">ENSEMBLE</span> <span class="muted">no member data returned from API</span></div>`;}
+    if(models){h+=`<div class="pro-block"><span class="tag tag-pro">MULTI-MODEL</span> <span class="model-pill ok">GFS: ${models.gfs??'—'}</span><span class="model-pill ok">ECMWF: ${models.ecmwf??'—'}</span><span class="model-pill ok">ICON: ${models.icon??'—'}</span>  spread: <span class="${models.converging?'green':'amber'}">${models.spread}</span>  <span class="${models.converging?'green':'amber'}">${models.converging?'converging ✓':'diverging'}</span></div>`;}
+    h+=`<div class="pro-block"><span class="tag tag-pro">CLIMATOLOGY (March)</span>  rain days: <span class="white">${clim.rain}%</span>  avg max: <span class="white">${cToF(clim.tempMax)}°F</span>  monthly precip: <span class="white">${clim.rainMm}mm</span></div>`;
+    h+=`<br><div class="line dim">  date         high   low    rain    prob   wind  | model acc</div>`;
+    h+=`<div class="line dim">  ----------   -----  -----  ------  -----  ----- | ---------</div>`;
+    times.slice(0,7).forEach((d,i)=>{
+      const mx=daily.temperature_2m_max[i],mn=daily.temperature_2m_min[i],rm=daily.precipitation_sum[i],rp=daily.precipitation_probability_max[i],wn=daily.wind_speed_10m_max[i];
+      const rf=rp>=60?`<span class="green">${rp}%</span>`:rp>=30?`<span class="amber">${rp}%</span>`:`<span class="muted">${rp!=null?rp+'%':'--'}</span>`;
+      const dec=calcDecay(i+1);
+      h+=`<div class="line">  <span class="muted">${d}</span>  <span class="amber">${mx!=null?cToF(mx)+'°F':'--'}</span>  <span class="blue">${mn!=null?cToF(mn)+'°F':'--'}</span>  <span class="white">${rm!=null?rm.toFixed(1):'--'}mm</span>  ${rf}  <span class="muted">${wn!=null?Math.round(wn*0.621):'--'}mph</span> | <span class="${dec.acc>=85?'green':dec.acc>=75?'amber':'red'}">${dec.acc}%</span></div>`;
+    });
+    h+=`<br><div class="line dim">Poly Weather Pro · sources: Open-Meteo · OpenWeatherMap · GFS · ECMWF · ICON · Ensemble</div>`;
+    out.innerHTML=h;
+  }catch(e){out.innerHTML=`<div class="line red">[ERR] ${e.message}</div>`;}
+}
+
+async function init(){
+  setStatus('loading');
+  document.getElementById('date-val').textContent=dateToStr(currentStartDate);
+  document.getElementById('date-cmd').textContent=dateToStr(currentStartDate);
+  buildCityChips();
+  const raw=await fetchPolymarket();
+  if(!raw||raw.length===0){
+    setStatus('demo');
+    await renderSignals(DEMO.map(d=>({...d})),true);
+  } else {
+    setStatus('live');
+    const wc={};
+    const enrichedRaw=await Promise.all(raw.slice(0,20).map(async m=>{
+      const title=parseTitle(m),price=parsePrice(m),vol=parseVol(m),daysOut=parseDaysOut(m);
+      const city=detectCity(title);
+      let s1=null,s2=null;
+      if(city&&CITIES[city]){
+        try{
+          if(!wc[city])wc[city]=await fetchWeather(city);
+          weatherCache[city]=wc[city];
+          const f=inferProb(wc[city],title);
+          s1=f.prob;s2=s1!==null?simulateSrc2(s1):null;
+        }catch{}
+      }
+      return{_title:title,_city:city,_price:price,_vol:vol,_s1:s1,_s2:s2,_daysOut:daysOut};
+    }));
+    const det=new Set(enrichedRaw.filter(m=>m._city).map(m=>m._city));
+    if(det.size>0){activeCities=det;buildCityChips();}
+    await renderSignals(enrichedRaw,false);
+  }
+}
+
+
+// ── TEMP TICKER ──────────────────────────────────────────────
+const TICKER_CITIES=[
+  {key:'new york',   label:'New York'},
+  {key:'toronto',    label:'Toronto',    lat:43.65,lon:-79.38},
+  {key:'lagos',      label:'Lagos'},
+  {key:'london',     label:'London'},
+  {key:'los angeles',label:'Los Angeles'},
+  {key:'paris',      label:'Paris'},
+  {key:'berlin',     label:'Berlin'},
+];
+
+</script>
+</body>
+</html>
